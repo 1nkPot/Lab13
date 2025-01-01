@@ -1,0 +1,98 @@
+﻿@page "/servers"
+@using act_01.Data // Ensure this matches your actual namespace
+@inject ServerService ServerService // Inject the service
+
+<h3>Servers</h3>
+
+<ul class="server-list">
+    @if (servers != null && servers.Count > 0)
+    {
+        foreach (var server in servers)
+        {
+            <li class="server-item">
+                @if (editingServerId == server.Id)
+                {
+                    <div>
+                        <input @bind="server.Name" placeholder="Server Name" />
+                        <input @bind="server.City" placeholder="City" />
+                        <button class="btn btn-success btn-sm" @onclick="() => SaveServer(server)">Save</button>
+                        <button class="btn btn-secondary btn-sm" @onclick="CancelEdit">Cancel</button>
+                    </div>
+                }
+                else
+                {
+                    <span>@server.Name - @server.City - @(server.IsOnline ? "Online" : "Offline")</span>
+                    <button class="btn btn-primary btn-sm edit-button" @onclick="() => EditServer(server)">Edit</button>
+                    <button class="btn btn-danger btn-sm delete-button" @onclick="() => DeleteServer(server.Id)">Delete</button>
+                }
+            </li>
+        }
+    }
+    else
+    {
+        <li>No servers available.</li>
+    }
+</ul>
+
+<h4>Add New Server</h4>
+<input @bind="newServerName" placeholder="Server Name" />
+<input @bind="newServerCity" placeholder="City" />
+<button @onclick="AddServer">Add Server</button>
+
+@code {
+    private List<Server> servers = new List<Server>();
+    private string newServerName;
+    private string newServerCity;
+    private int? editingServerId; // Track which server is being edited
+
+    protected override void OnInitialized()
+    {
+        LoadServers();
+    }
+
+    private void LoadServers()
+    {
+        servers = ServerService.GetServers(); // Load servers from the repository
+    }
+
+    private void AddServer()
+    {
+        if (!string.IsNullOrWhiteSpace(newServerName) && !string.IsNullOrWhiteSpace(newServerCity))
+        {
+            var newServer = new Server
+            {
+                Name = newServerName,
+                City = newServerCity,
+                IsOnline = true // Default value
+            };
+
+            ServerService.AddServer(newServer);
+            LoadServers(); // Refresh the list
+            newServerName = string.Empty; // Clear input
+            newServerCity = string.Empty; // Clear input
+        }
+    }
+
+    private void DeleteServer(int serverId)
+    {
+        ServerService.DeleteServer(serverId);
+        LoadServers(); // Refresh the list
+    }
+
+    private void EditServer(Server server)
+    {
+        editingServerId = server.Id; // Set the ID of the server being edited
+    }
+
+    private void SaveServer(Server server)
+    {
+        ServerService.UpdateServer(server.Id, server); // Update the server in the repository
+        editingServerId = null; // Clear the editing state
+        LoadServers(); // Refresh the list
+    }
+
+    private void CancelEdit()
+    {
+        editingServerId = null; // Clear the editing state
+    }
+}
